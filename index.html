@@ -90,7 +90,7 @@
 
         <div class="mb-6 input-group">
             <label for="score" id="score_label">Điểm đầu vào:</label>
-            <input type="text" id="score" name="score" placeholder="Ví dụ: 29.5" required class="rounded-lg">
+            <input type="text" id="score" name="score" placeholder="Ví dụ: 80" required class="rounded-lg">
         </div>
 
         <div class="mb-8 input-group">
@@ -156,7 +156,7 @@
         function calculateConversion(x, inputType) {
             /**
              * Tính điểm quy đổi từ điểm đầu vào (x) sang điểm Tổ hợp A00 (thang 30)
-             * dựa trên công thức y = (d-c)/(b-a) * (x-a) + c
+             * dựa trên công thức y = c + ((x-a)/(b-a)) * (d-c)
              */
             if (CONVERSION_DATA[inputType]) {
                 const { ranges } = CONVERSION_DATA[inputType];
@@ -164,11 +164,12 @@
                     // Kiểm tra xem điểm x có nằm trong khoảng [a, b] không
                     // Hoặc nếu x là biên trên của khoảng và là khoảng cuối cùng
                     if ((x >= a && x <= b) || (x > b && a === Math.max(...ranges.map(r => r.a)))) {
-                        if (b === a) { // Tránh chia cho 0 nếu khoảng là một điểm duy nhất
+                        if (b === a) { // Avoid division by zero if range is a single point
                             return c;
                         }
-                        const y = ((d - c) / (b - a)) * (x - a) + c;
-                        return Math.round(y * 1000) / 1000; // Làm tròn 3 chữ số thập phân
+                        // Áp dụng công thức mới: y = c + ((x-a)/(b-a)) * (d-c)
+                        const y = c + ((x - a) / (b - a)) * (d - c);
+                        return Math.round(y * 1000) / 1000; // Round to 3 decimal places
                     }
                 }
                 return "Không tìm thấy khoảng điểm phù hợp.";
@@ -185,7 +186,7 @@
             let score = parseFloat(scoreInput.value);
             const inputType = inputTypeSelect.value;
 
-            // Ẩn kết quả cũ
+            // Hide old results
             resultDiv.classList.add('hidden');
             resultDiv.textContent = '';
 
@@ -207,24 +208,23 @@
             }
         }
 
-        // Cập nhật label của input score khi thay đổi loại đầu vào
+        // Update input score label when input type changes
         document.getElementById('input_type').addEventListener('change', function() {
             const selectedType = this.value;
             const scoreLabel = document.getElementById('score_label');
             scoreLabel.textContent = CONVERSION_DATA[selectedType].label;
-            // Đặt placeholder mặc định cho các phương thức còn lại
+            // Set default placeholder for remaining methods
             document.getElementById('score').placeholder = "Ví dụ: 80";
         });
 
-        // Khởi tạo label ban đầu khi tải trang
+        // Initialize label on page load
         document.addEventListener('DOMContentLoaded', (event) => {
             const initialType = document.getElementById('input_type').value;
             const scoreLabel = document.getElementById('score_label');
             scoreLabel.textContent = CONVERSION_DATA[initialType].label;
-            // Đặt placeholder mặc định cho các phương thức còn lại
+            // Set default placeholder for remaining methods
             document.getElementById('score').placeholder = "Ví dụ: 80";
         });
     </script>
 </body>
 </html>
-
