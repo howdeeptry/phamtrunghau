@@ -118,7 +118,9 @@
                 <option value="2">5.5 (Thưởng 2 điểm)</option>
                 <option value="3">6.0 (Thưởng 3 điểm)</option>
                 <option value="4">6.5 (Thưởng 4 điểm)</option>
-                <option value="5">≥ 7.0 (Thưởng 5 điểm)</option>
+                <option value="5">7.0 (Thưởng 5 điểm)</option>
+                <option value="6">7.5 (Thưởng 6 điểm)</option>
+                <option value="7">≥ 8.0 (Thưởng 7 điểm)</option>
             </select>
         </div>
 
@@ -202,7 +204,9 @@
             '2': 2, // IELTS 5.5
             '3': 3, // IELTS 6.0
             '4': 4, // IELTS 6.5
-            '5': 5  // IELTS >= 7.0
+            '5': 5, // IELTS 7.0
+            '6': 6, // IELTS 7.5
+            '7': 7  // IELTS >= 8.0
         };
 
         function calculateConversion(x, inputType) {
@@ -242,7 +246,7 @@
             let score = parseFloat(scoreInput.value);
             const inputType = inputTypeSelect.value;
             const priorityArea = priorityAreaSelect.value;
-            const ieltsBandValue = ieltsScoreSelect.value; // Get string value from select
+            const ieltsBandValue = ieltsScoreSelect.value;
 
             // Hide old results
             resultDiv.classList.add('hidden');
@@ -255,23 +259,43 @@
             }
 
             let bonusPoints = 0;
-            let priorityPointsOn100Scale = 0; // Priority points scaled to 100
+            let priorityPointsOn100Scale = 0;
             let scoreBefore30PointConversion = score; // This will be the score after adding IELTS bonus and priority (on 100-point scale)
             let convertedScore = 0; // This will be the score on the 30-point scale
             let finalTotalScore = 0; // This will be the 30-point score after all calculations
             let outputLabel = CONVERSION_DATA[inputType].outputLabel;
 
+            let resultHtml = ``;
+
             // Apply IELTS bonus if the selected method has it (currently only DGTD)
             if (CONVERSION_DATA[inputType].hasIELTS) {
                 bonusPoints = getIELTSBonus(ieltsBandValue);
                 scoreBefore30PointConversion = score + bonusPoints;
+                resultHtml += `
+                    <p>Điểm thi ban đầu: <strong>${score}</strong></p>
+                    <p>Điểm thưởng IELTS: <strong>${bonusPoints}</strong></p>
+                    <p>Điểm sau thưởng: <strong>${scoreBefore30PointConversion}</strong></p>
+                `;
+            } else {
+                resultHtml += `<p>Điểm đầu vào: <strong>${score}</strong></p>`;
             }
 
             // Calculate priority points on 100-point scale for DGTD
             if (CONVERSION_DATA[inputType].hasPriority && inputType === 'dgtd') {
                 const basePriority = PRIORITY_POINTS[priorityArea];
+                // Apply priority directly to scoreBefore30PointConversion (which is on 100-point scale)
+                // The formula for DGTD is "Điểm dgtd + Điểm thưởng + điểm ưu tiên*10/3"
                 priorityPointsOn100Scale = basePriority * (100 / 30); // Convert 30-point priority to 100-point scale
                 scoreBefore30PointConversion += priorityPointsOn100Scale;
+
+                if (priorityArea !== 'none') {
+                    resultHtml += `
+                        <p>Điểm ưu tiên (${priorityArea.toUpperCase()}) trên thang 100: <strong>${Math.round(priorityPointsOn100Scale * 1000) / 1000}</strong></p>
+                        <p>Tổng điểm (ĐGTD/TSA + Thưởng + Ưu tiên) trên thang 100: <strong>${Math.round(scoreBefore30PointConversion * 1000) / 1000}</strong></p>
+                    `;
+                }
+            } else if (priorityArea !== 'none' && !CONVERSION_DATA[inputType].hasPriority) {
+                 resultHtml += `<p class="text-red-500">Phương thức này không được cộng điểm ưu tiên.</p>`;
             }
 
 
@@ -284,30 +308,7 @@
                 return;
             }
 
-            finalTotalScore = convertedScore; // All additions already happened on 100-point scale
-
-            let resultHtml = ``;
-
-            // Display initial score and bonus if applicable
-            if (CONVERSION_DATA[inputType].hasIELTS) {
-                resultHtml += `
-                    <p>Điểm thi ĐGTD/TSA ban đầu: <strong>${score}</strong></p>
-                    <p>Điểm thưởng IELTS: <strong>${bonusPoints}</strong></p>
-                    <p>Điểm sau thưởng: <strong>${score + bonusPoints}</strong></p>
-                `;
-            } else {
-                resultHtml += `<p>Điểm đầu vào: <strong>${score}</strong></p>`;
-            }
-
-            if (priorityArea !== 'none' && CONVERSION_DATA[inputType].hasPriority && inputType === 'dgtd') {
-                resultHtml += `
-                    <p>Điểm ưu tiên (${priorityArea.toUpperCase()}) trên thang 100: <strong>${Math.round(priorityPointsOn100Scale * 1000) / 1000}</strong></p>
-                    <p>Tổng điểm (ĐGTD/TSA + Thưởng + Ưu tiên) trên thang 100: <strong>${Math.round(scoreBefore30PointConversion * 1000) / 1000}</strong></p>
-                `;
-            } else if (priorityArea !== 'none' && !CONVERSION_DATA[inputType].hasPriority) {
-                 resultHtml += `<p class="text-red-500">Phương thức này không được cộng điểm ưu tiên.</p>`;
-            }
-
+            finalTotalScore = convertedScore; // All additions already happened on 100-point scale and then converted
 
             resultHtml += `
                 <p>${outputLabel} <strong>${convertedScore}</strong></p>
